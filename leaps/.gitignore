@@ -1,0 +1,17 @@
+*.pyc
+.*.sw[pon]
+*.json
+*.p
+.ipynb_checkpoints
+.ipynb_checkpoints/*
+**/__pycache__/
+logs/
+.ropeproject/
+train_dir
+trained_models/
+wandb/
+*.DS_Store
+env
+data
+pretrain/output_dir
+results/
