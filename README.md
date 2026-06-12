@@ -1,103 +1,75 @@
-# [ICLR'25] Synthesizing Programmatic Reinforcement Learning Policies with Large Language Model Guided Search
+# Diffusion-based Control Lyapunov Barrier Functions
 
-This repository officially implements [**Synthesizing Programmatic Reinforcement Learning Policies with Large Language Model Guided Search**](https://arxiv.org/abs/2405.16450).
+## Abstract
 
-LLM-GS combines the large language model and search algorithms for solving Programmatic Reinforcement Learning (PRL) problems. LLM-GS has a good sample efficiency in Karel environments. Also, LLM-GS shows good extensibility to novel tasks and adaptability to the novel environments of [MInigrid](https://github.com/Farama-Foundation/Minigrid).
+This repository contains the implementation code for the NeurIPS 2025 submission "Safe and Stable Control with Lyapunov-Guided Diffusion Models." Our work introduces a novel framework for safe and stable control that leverages Lyapunov-guided diffusion models. On the other hand, the diffusion-sampled policy is used to generate trajectories that are used to update the CLBF.
 
-![teaser](images/llm_gs_model.jpg)
+## Methodology
 
+### Probabilistic CLBF Formulation
 
+We reformulate the traditional CLBF optimization problem as a probabilistic sampling task. The target trajectory distribution is defined as a Gibbs measure:
 
-## Getting Started
-
-### Clone
-
-After you download the repo, please initialize the leaps submodule.
-```bash
-git submodule update --init --recursive
+```
+p(U) ∝ p_safe(U) · p_stable(U) · p_cost(U)
 ```
 
-### Dependencies
+where:
+- **p_safe**: Ensures trajectories remain within safe regions (V(x) ≤ c)
+- **p_stable**: Ensures CLBF decreases along trajectories through an Almost-Lyapunov formulation
+- **p_cost**: Biases sampling toward nominal or low-cost trajectories
 
-We recommend using `conda` to install the dependencies:
+### Almost Lyapunov Theory
+
+We leverage Almost Lyapunov theory in our formulation. This allows for occasional violations of the Lie derivative condition as long as they occur with sufficiently small probability and in regions of minimal influence. Mathematically, we implement this as:
+
+```
+p_stable ∝ exp(-1/γ₂ · Σᵗ || [L_f V(xₜ) + λV(xₜ)]⁺ ||²)
+```
+
+where [z]⁺ = ReLU(z) and γ₂ is a small temperature parameter.
+
+### Diffusion Sampling Algorithm
+
+Our implementation uses Monte Carlo score ascent within diffusion sampling:
+
+
+1. Reverse diffusion gradually denoises trajectories guided by CLBF
+2. The score function is estimated using Monte Carlo sampling
+
+### CLBF Learning
+
+The CLBF itself is updated using sampled trajectories to satisfy several constraints including positivity, goal minimization, safety level-sets, and stability conditions.
+
+## Code Structure
+
+- `neural_clbf/controllers/diffusion_clbf.py`: Main implementation of diffusion-based CLBF controller
+- `neural_clbf/systems/`: System dynamics implementations
+- `evaluation/`: Training and evaluation scripts
+
+## Running Experiments
+
+To reproduce the results in our paper:
 
 ```bash
-conda env create --name llm_gs_env --file environment.yml
+# Clone the repository
+git clone [anonymous-repo-link]
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Run example experiment
+python neural_clbf/training/xxx.py
 ```
 
-If `conda` is not available, it is also possible to install dependencies using `pip` on **Python 3.8**:
+## Results
 
-```bash
-pip install -r requirements.txt
-```
+Our method demonstrates significant improvements over baseline approaches:
 
-After installing the environment, please export your **OpenAI API key** to execute our main method:
-```bash
-export OPENAI_KEY="YOUR_API_KEY"
-```
+1. **Success Rate**: Higher probability of reaching goals while maintaining safety and stability
+2. **Non-convex Constraints**: Effective handling of non-convex safe regions
+3. **Efficiency**: Requires fewer inference time compared to model-based based diffusion approaches
 
-### Execution
-To execute our main method and baselines. You can change **method** and **task** inside the scripts. **(LLM-GS is our main method.)**
+## License
 
-```bash
-bash scripts/run_main_results.sh
-```
-
-Or you can run specific algorithm and tasks
-```bash
-# All scripts are in scripts/{baseline}/run_{task}.sh
-bash scripts/LLM-GS/run_DoorKey.sh
-```
-
-You can run revision method of the task DoorKey
-```bash
-# The revision scripts are in scripts/evision/run_{revision_method}.sh
-bash scripts/LLM-Revision/run_regeneration.sh
-```
-
-Please note that the result of LLM-GS might not be the same as the one we reported in our paper due to the randomness of the LLMs.
-
-The experiment results will be in the `output` directory.
-
-## Adapting LLM-GS to Your Environment
-
-To use LLM-GS for your custom PRL task:
-
-1. **Define your DSL**
-   Create a new DSL in `prog_policies/your_dsl/` and specify production rules.
-
-2. **Register your environment**
-   Add it to `prog_policies/utils/__init__.py`.
-
-3. **Implement your PRL environment**
-   - Write your environment in `prog_policies/your_environment/`
-   - Option A: Subclass `BaseEnvironment` in `prog_policies/base/environment.py`  
-   - Option B: Use `gymnasium.core.Wrapper`
-
-4. **Write your prompt template**
-   Follow `llm/prompt_template.py` structure to write your system prompt and user prompt.
-
-5. **Set up search space (if needed)**
-   Create a custom search space in `prog_policies/search_space`. You can specify your mutation method here for local search. If the production rules are more complicated than Karel's, writing your own search space is necessary.
-
-6. **Parse LLM output**
-   Use `convert()` and `get_program_str_from_llm_response_dsl()` in `llm/utils.py` to post-process Python and DSL programs.
-
-
-
-## Acknowledge and licence
-
-1. The baseline implementations in `prog_policies` are from [Reclaiming the Source of Programmatic Policies: Programmatic versus Latent Spaces](https://github.com/lelis-research/prog_policies). The baselines (CEM, CEBS, HC) code under `prog_policies` should follow the GPL-3.0 license.
-2. The [HPRL](https://arxiv.org/abs/2301.12950) baseline implementation is not in this repository. We run our experiment in [this repository](https://github.com/a015kh/hprl)
-
-## Citation
-
-```bibtex
-@inproceedings{liu2025synthesizing,
-    title     = {Synthesizing Programmatic Reinforcement Learning Policies with Large Language Model Guided Search},
-    author    = {Max Liu and Chan-Hung Yu and Wei-Hsu Lee and Cheng-Wei Hung and Yen-Chun     Chen and Shao-Hua Sun},
-    booktitle = {The Thirteenth International Conference on Learning Representations},
-    year      = {2025},
-}
-```
+Anonymous License - To be updated after review process

@@ -1,20 +1,34 @@
-torch>=2.1
-Pillow
-matplotlib
+# Standard
 numpy
-scipy
+matplotlib
+seaborn
 pandas
-tqdm
-tensorboardX==1.9
-gym==0.15.4
-requests
-wandb
-ply
-imageio
-h5py
-colorlog
-progressbar
-minigrid
-torchvision>=0.16
-langchain==0.1.16
-langchain-openai==0.1.3
+
+# Code quality
+mypy
+pytest
+flake8
+brunette
+
+# Learning libraries
+torch==2.1.0
+pytorch-lightning==2.5.0.post0
+torchmetrics==0.7.0
+
+# Optimization
+cvxpy==1.2.1
+cvxpylayers==0.1.5
+gurobipy==9.1.2
+osqp
+ecos
+scs
+casadi
+
+# Geometry
+shapely
+
+# SINDYc dynamics identification
+pysindy
+
+# Freeze versions to avoid bugs
+setuptools==59.5.0
